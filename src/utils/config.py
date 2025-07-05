@@ -39,6 +39,8 @@ class Config:
             config["wait_time_max"] = float(wait_max)
         if score := os.getenv("SCORE"):
             config["score"] = int(score)
+        if full_extra_tasks := os.getenv("FULL_EXTRA_TASKS"):
+            config["full_extra_tasks"] = bool(full_extra_tasks)
             
         # 自动登录相关配置
         if phone := os.getenv("NETEASE_PHONE"):

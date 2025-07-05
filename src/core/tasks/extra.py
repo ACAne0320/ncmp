@@ -21,9 +21,11 @@ class ExtraTask:
         """处理额外的评分任务"""
         try:
             extra_tasks, completed_count = self._get_extra_tasks()
+
+            total_tasks = (7 if not self.config.get('full_extra_tasks', False) else len(extra_tasks) + completed_count)
             
-            # 如果已经完成7个任务，直接返回
-            if completed_count >= 7:
+            # 如果已经完成任务，直接返回
+            if completed_count >= total_tasks:
                 self.logger.info(f"今日已完成 {completed_count} 个额外评分任务，已达到每日上限")
                 return
                 
@@ -35,8 +37,7 @@ class ExtraTask:
             
             # 记录本次成功评分的数量
             success_count = 0
-            # 每天最多完成7个额外任务
-            remaining_tasks = 7 - completed_count
+            remaining_tasks = total_tasks - completed_count
             
             for task in extra_tasks:
                 if success_count >= remaining_tasks:
