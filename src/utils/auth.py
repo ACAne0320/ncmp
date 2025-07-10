@@ -1,13 +1,26 @@
-import requests
-import re
+import hashlib
 from typing import Dict, Tuple, Optional
 from ..utils.logger import Logger
+
+try:
+    from pyncm.apis.login import LoginViaCellphone
+    from pyncm import GetCurrentSession, DumpSessionAsString
+    PYNCM_AVAILABLE = True
+except ImportError:
+    PYNCM_AVAILABLE = False
 
 
 class AuthService:
     def __init__(self, logger: Logger):
         self.logger = logger
-        self.login_api = "https://ncma-web.vercel.app/login/cellphone"
+        
+        if not PYNCM_AVAILABLE:
+            self.logger.error("pyncm 库未安装，无法使用登录功能")
+            raise ImportError("pyncm 库未安装，请执行 pip install pyncm")
+    
+    def _hash_password(self, password: str) -> str:
+        """将明文密码转换为 MD5 哈希"""
+        return hashlib.md5(password.encode()).hexdigest()
         
     def login(self, phone: str, password: str = None, md5_password: str = None) -> Tuple[bool, Optional[Dict[str, str]]]:
         """
@@ -22,88 +35,58 @@ class AuthService:
             (成功状态, Cookie字典)
         """
         try:
-            self.logger.info(f"尝试登录账号: {phone[:3]}****{phone[-4:]}")
+            self.logger.info(f"尝试使用 pyncm 登录账号: {phone[:3]}****{phone[-4:]}")
             
-            # 构建参数，优先使用md5_password
-            params = {"phone": phone}
-            
+            # 确定使用哪种密码
             if md5_password:
-                params["md5_password"] = md5_password
-                self.logger.debug("使用MD5加密密码登录")
+                password_hash = md5_password
+                self.logger.debug("使用提供的MD5密码登录")
             elif password:
-                params["password"] = password
-                self.logger.debug("使用明文密码登录")
+                password_hash = self._hash_password(password)
+                self.logger.debug("使用明文密码（转换为MD5）登录")
             else:
                 self.logger.error("未提供密码，无法登录")
                 return False, None
             
-            # 发送登录请求
-            response = requests.get(self.login_api, params=params)
+            # 使用 pyncm 登录
+            result = LoginViaCellphone(phone, passwordHash=password_hash, ctcode=86)
             
-            # 检查响应状态
-            if response.status_code != 200:
-                self.logger.error(f"登录请求失败，状态码: {response.status_code}")
+            # 检查登录结果
+            if result.get("code") != 200:
+                error_msg = result.get("message", "未知错误")
+                self.logger.error(f"登录失败: {error_msg}")
                 return False, None
             
-            # 解析响应数据
-            response_data = response.json()
-            if response_data.get("code") != 200:
-                self.logger.error(f"登录失败: {response_data.get('message', '未知错误')}")
-                return False, None
+            # 获取当前会话
+            session = GetCurrentSession()
             
-            # 从响应中获取Cookie
-            music_u = None
-            csrf = None
+            # 从会话的 cookies 中获取
+            music_u_cookie = session.cookies.get('MUSIC_U')
+            csrf_cookie = session.cookies.get('__csrf')
             
-            # 首先尝试从cookies对象获取
-            cookies = response.cookies
-            music_u = cookies.get("MUSIC_U")
-            csrf = cookies.get("__csrf")
-            
-            # 如果上面方法没有获取到，尝试解析响应中的cookie字段
-            if (not music_u or not csrf) and "cookie" in response_data:
-                cookie_str = response_data["cookie"]
-                
-                # 提取MUSIC_U
-                music_u_match = re.search(r'MUSIC_U=([^;]+)', cookie_str)
-                if music_u_match:
-                    music_u = music_u_match.group(1)
-                
-                # 提取__csrf
-                csrf_match = re.search(r'__csrf=([^;]+)', cookie_str)
-                if csrf_match:
-                    csrf = csrf_match.group(1)
-            
-            # 最后一种方法，尝试从Set-Cookie头部获取
-            if not music_u or not csrf:
-                cookie_header = response.headers.get("Set-Cookie", "")
-                if not music_u:
-                    music_u_match = re.search(r'MUSIC_U=([^;]+)', cookie_header)
-                    if music_u_match:
-                        music_u = music_u_match.group(1)
-                if not csrf:
-                    csrf_match = re.search(r'__csrf=([^;]+)', cookie_header)
-                    if csrf_match:
-                        csrf = csrf_match.group(1)
-            
-            if not music_u:
-                self.logger.error("未能从响应中提取MUSIC_U")
+            if not music_u_cookie:
+                self.logger.error("未能从会话中获取 MUSIC_U cookie")
                 return False, None
                 
-            if not csrf:
-                self.logger.error("未能从响应中提取__csrf")
+            if not csrf_cookie:
+                self.logger.error("未能从会话中获取 __csrf cookie")
                 return False, None
-                
+            
+            # 构建返回的 Cookie 字典
             cookie_dict = {
-                "Cookie_MUSIC_U": music_u,
-                "Cookie___csrf": csrf
+                "Cookie_MUSIC_U": music_u_cookie,
+                "Cookie___csrf": csrf_cookie
             }
             
             self.logger.info("登录成功并获取Cookie")
-            self.logger.debug(f"成功获取MUSIC_U: {music_u[:10]}... 和 __csrf: {csrf}")
+            self.logger.debug(f"成功获取MUSIC_U: {music_u_cookie[:10]}... 和 __csrf: {csrf_cookie}")
+            
+            # 记录会话信息（可选，用于调试）
+            session_string = DumpSessionAsString(session)
+            self.logger.debug(f"会话信息: {session_string[:50]}...")
             
             return True, cookie_dict
             
         except Exception as e:
-            self.logger.error(f"登录过程发生异常: {str(e)}")
+            self.logger.error(f"pyncm 登录过程发生异常: {str(e)}")
             return False, None

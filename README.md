@@ -15,7 +15,7 @@ ncmp(NetEase Cloud Music Partner/网易云音乐合伙人)
 - 完善的通知机制
   - Cookie 失效自动发送邮件提醒
 - 一次配置持续使用
-  - 支持自动登录账号并刷新Cookie，基于[NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)
+  - 支持自动登录账号并刷新Cookie，基于[pyncm](https://github.com/mos9527/pyncm)库
 
 ## 使用前准备
 
@@ -190,7 +190,7 @@ ncmp(NetEase Cloud Music Partner/网易云音乐合伙人)
 - 任务提交默认添加了 15-20 秒的等待时间，避免被检测异常
 - 建议使用 GitHub Actions 的定时任务功能，避免遗漏每日任务
 - 网易云音乐的 Cookie 两周左右就会过期，建议配置邮箱以便及时收到失效通知
-- Cookie 自动刷新使用了[该仓库](https://github.com/ACAne0320/ncma)的登陆API，如果害怕隐私泄露，可以自行fork该仓库并本地部署，将代码中刷新cookie的请求链接替换即可
+- Cookie 自动刷新使用了[pyncm](https://github.com/mos9527/pyncm)库进行登陆，如果使用明文会自动将密码进行md5加密
 
 ## 声明
 
@@ -203,6 +203,7 @@ ncmp(NetEase Cloud Music Partner/网易云音乐合伙人)
 - [qinglong-sign](https://github.com/KotoriMinami/qinglong-sign)
 - [CloudMusicBot](https://github.com/C20C01/CloudMusicBot)
 - [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)
+- [pyncm](https://github.com/mos9527/pyncm)
 
 ## 反馈
 

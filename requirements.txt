@@ -1,3 +1,4 @@
 requests>=2.25.0
 pycryptodome>=3.9.0
 PyNaCl>=1.4.0
+pyncm~=1.7.1

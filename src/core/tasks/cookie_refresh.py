@@ -42,7 +42,7 @@ class CookieRefreshTask:
                     )
                 return False
                 
-            # 执行登录，优先使用MD5密码
+            # 执行登录，优先使用MD5密码，如果使用明文密码，则自动转换为MD5
             success, cookies = self.auth_service.login(
                 phone=phone,
                 password=password if not md5_password else None,
