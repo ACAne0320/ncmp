@@ -10,17 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v2
+    # 更新到 v4 以避免 Node.js 警告（可选但推荐）
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5   # 更新到 v5
       with:
         python-version: '3.9'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        
+        # 1. 安装 requirements.txt 中的其他依赖（不含 pyncm）
         pip install -r requirements.txt
+        
+        # 2. 从 GitCode 镜像安装 pyncm（原 GitHub 仓库已消失）
+        pip install git+https://gitcode.com/gh_mirrors/py/pyncm.git
     
     - name: Run script
       env:
