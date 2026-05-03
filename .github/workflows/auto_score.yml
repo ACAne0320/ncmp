@@ -2,7 +2,7 @@ name: Auto Score
 
 on:
   schedule:
-    - cron: '0 17 * * *'  # UTC 17:00 (北京时间1:00)
+    - cron: '0 17 * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,11 +15,16 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
+        python-version: '3.11'   # 建议固定版本
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        
+        # 1. 先从 GitHub 安装 pyncm 的 v1.7.1（携带正确版本号）
+        pip install git+https://${{ secrets.GITHUB_TOKEN }}@github.com/mos9527/pyncm.git@v1.7.1
+        
+        # 2. 再安装 requirements.txt 里的其他依赖（pyncm 已满足，不会报错）
         pip install -r requirements.txt
     
     - name: Run script
@@ -34,4 +39,4 @@ jobs:
         WAIT_TIME_MAX: ${{ secrets.WAIT_TIME_MAX }}
         SCORE: ${{ secrets.SCORE }}
         FULL_EXTRA_TASKS: ${{ secrets.FULL_EXTRA_TASKS }}
-      run: python main.py 
+      run: python main.py
